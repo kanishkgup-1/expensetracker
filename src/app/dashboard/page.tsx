@@ -1,9 +1,8 @@
-"use client";
-
 import React from "react";
 import Layout from "../components/Layout";
 import Header from "../components/Header";
 import StatsCard from "../components/StatsCard";
+import GraphCard from "../components/GraphCard";
 
 const DashboardPage: React.FC = () => {
   return (
@@ -15,6 +14,7 @@ const DashboardPage: React.FC = () => {
         <StatsCard title="Monthly Budget" value="$2,000" />
         <StatsCard title="Remaining" value="$800" />
       </div>
+      <GraphCard />
     </Layout>
   );
 };
