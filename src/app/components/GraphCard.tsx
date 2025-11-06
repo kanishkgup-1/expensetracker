@@ -9,6 +9,7 @@ import {
   LinearScale,
   BarElement,
   Title,
+  TooltipItem,
 } from 'chart.js';
 import { Pie, Bar } from 'react-chartjs-2';
 
@@ -99,10 +100,10 @@ const GraphCard: React.FC<GraphCardProps> = ({ chartData = [] }) => {
       },
       tooltip: {
         callbacks: {
-          label: function(context: any) {
+          label: function(context: TooltipItem<'pie'>) {
             const total = values.reduce((sum, val) => sum + val, 0);
-            const percentage = ((context.raw / total) * 100).toFixed(1);
-            return `${context.label}: $${context.raw.toFixed(2)} (${percentage}%)`;
+            const percentage = ((context.raw as number / total) * 100).toFixed(1);
+            return `${context.label}: $${(context.raw as number).toFixed(2)} (${percentage}%)`;
           },
         },
       },
@@ -118,8 +119,8 @@ const GraphCard: React.FC<GraphCardProps> = ({ chartData = [] }) => {
       },
       tooltip: {
         callbacks: {
-          label: function(context: any) {
-            return `Amount: $${context.raw.toFixed(2)}`;
+          label: function(context: TooltipItem<'bar'>) {
+            return `Amount: $${(context.raw as number).toFixed(2)}`;
           },
         },
       },
@@ -128,7 +129,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ chartData = [] }) => {
       y: {
         beginAtZero: true,
         ticks: {
-          callback: function(value: any) {
+          callback: function(value: string | number) {
             return '$' + value;
           },
         },
