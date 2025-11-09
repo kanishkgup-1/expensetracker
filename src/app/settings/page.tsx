@@ -301,7 +301,7 @@ const SettingsPage: React.FC = () => {
               </div>
             </form>
           ) : (
-            <p className="text-gray-600">Click "Update Password" to change your password</p>
+            <p className="text-gray-600">Click &quot;Update Password&quot; to change your password</p>
           )}
         </div>
       </div>
