@@ -98,7 +98,7 @@ const ExpensePage: React.FC = () => {
       setMonthlyBudget(budget);
       setBudgetInput("");
       setShowBudgetForm(false);
-      alert(`Monthly budget set to $${budget}`);
+      alert(`Monthly budget set to ₹${budget}`);
     } else {
       alert("Please enter a valid budget amount");
     }
@@ -132,9 +132,9 @@ const ExpensePage: React.FC = () => {
       .reduce((sum, exp) => sum + exp.amount, 0);
 
     if (monthlyTotal > monthlyBudget) {
-      alert(`🚨 Budget Alert! You've exceeded your monthly budget of $${monthlyBudget}. Current spending: $${monthlyTotal.toFixed(2)}`);
+      alert(`🚨 Budget Alert! You've exceeded your monthly budget of ₹${monthlyBudget}. Current spending: ₹${monthlyTotal.toFixed(2)}`);
     } else if (monthlyTotal > monthlyBudget * 0.8) {
-      alert(`⚠️ Warning! You've used 80% of your monthly budget. Current: $${monthlyTotal.toFixed(2)} / $${monthlyBudget}`);
+      alert(`⚠️ Warning! You've used 80% of your monthly budget. Current: ₹${monthlyTotal.toFixed(2)} / ₹${monthlyBudget}`);
     }
   };
 
@@ -178,8 +178,8 @@ const ExpensePage: React.FC = () => {
         {monthlyBudget > 0 && (
           <div>
             <div className="flex justify-between text-sm text-gray-600 mb-2">
-              <span>Monthly Spending: ${monthlyTotal.toFixed(2)}</span>
-              <span>Budget: ${monthlyBudget}</span>
+              <span>Monthly Spending: ₹{monthlyTotal.toFixed(2)}</span>
+              <span>Budget: ₹{monthlyBudget}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-4">
               <div
@@ -193,7 +193,7 @@ const ExpensePage: React.FC = () => {
             </div>
             <p className="text-sm text-gray-600 mt-2">
               {((monthlyTotal / monthlyBudget) * 100).toFixed(1)}% of budget used
-              {budgetRemaining > 0 && ` | $${budgetRemaining.toFixed(2)} remaining`}
+              {budgetRemaining > 0 && ` | ₹${budgetRemaining.toFixed(2)} remaining`}
             </p>
           </div>
         )}
@@ -269,7 +269,7 @@ const ExpensePage: React.FC = () => {
                     <p className="text-gray-500 text-sm">{expense.date}</p>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="font-bold text-lg">${expense.amount}</span>
+                    <span className="font-bold text-lg">₹{expense.amount}</span>
                     <button
                       onClick={() => deleteExpense(expense.id)}
                       className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 text-sm"

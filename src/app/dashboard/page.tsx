@@ -103,10 +103,10 @@ const DashboardPage: React.FC = () => {
       
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatsCard title="Total Expenses" value={`$${totalExpenses.toFixed(2)}`} />
+        <StatsCard title="Total Expenses" value={`₹${totalExpenses.toFixed(2)}`} />
         <StatsCard title="Categories" value={categoriesCount} />
-        <StatsCard title="Monthly Budget" value={monthlyBudget > 0 ? `$${monthlyBudget.toFixed(2)}` : "Not Set"} />
-        <StatsCard title="Remaining" value={monthlyBudget > 0 ? `$${remaining.toFixed(2)}` : "N/A"} />
+        <StatsCard title="Monthly Budget" value={monthlyBudget > 0 ? `₹${monthlyBudget.toFixed(2)}` : "Not Set"} />
+        <StatsCard title="Remaining" value={monthlyBudget > 0 ? `₹${remaining.toFixed(2)}` : "N/A"} />
       </div>
 
       {/* Charts */}
@@ -121,8 +121,8 @@ const DashboardPage: React.FC = () => {
           {monthlyBudget > 0 ? (
             <div className="space-y-4">
               <div className="flex justify-between text-sm">
-                <span>Spent: ${monthlyTotal.toFixed(2)}</span>
-                <span>Budget: ${monthlyBudget.toFixed(2)}</span>
+                <span>Spent: ₹{monthlyTotal.toFixed(2)}</span>
+                <span>Budget: ₹{monthlyBudget.toFixed(2)}</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-4">
                 <div
@@ -132,9 +132,9 @@ const DashboardPage: React.FC = () => {
               </div>
               <div className="text-center">
                 {remaining >= 0 ? (
-                  <p className="text-green-600">💰 ${remaining.toFixed(2)} remaining</p>
+                  <p className="text-green-600">💰 ₹{remaining.toFixed(2)} remaining</p>
                 ) : (
-                  <p className="text-red-600">⚠️ Over budget by ${Math.abs(remaining).toFixed(2)}</p>
+                  <p className="text-red-600">⚠️ Over budget by ₹{Math.abs(remaining).toFixed(2)}</p>
                 )}
               </div>
             </div>
