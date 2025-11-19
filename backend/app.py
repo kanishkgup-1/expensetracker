@@ -17,7 +17,6 @@ client = MongoClient(MONGO_URI)
 db = client['expense_tracker']
 expenses_collection = db['expenses']
 categories_collection = db['categories']
-budgets_collection = db['budgets']  # NEW: for budgets
 
 # Helper function to convert ObjectId to string
 def serialize_doc(doc):
@@ -25,41 +24,120 @@ def serialize_doc(doc):
         doc['_id'] = str(doc['_id'])
     return doc
 
-# --- Existing routes here (omitted for brevity) ---
+# ========== EXPENSE API ==========
 
-# ========== BUDGET ROUTES ==========
+# Get all expenses
+@app.route('/api/expenses', methods=['GET'])
+def get_expenses():
+    expenses = list(expenses_collection.find())
+    return jsonify([serialize_doc(exp) for exp in expenses]), 200
 
-# Get budget for current month/year (default if not specified)
-@app.route('/api/budget', methods=['GET'])
-def get_budget():
-    year = int(request.args.get('year', datetime.now().year))
-    month = int(request.args.get('month', datetime.now().month))
-    budget = budgets_collection.find_one({'year': year, 'month': month})
-    if budget:
-        return jsonify(serialize_doc(budget)), 200
-    return jsonify({'year': year, 'month': month, 'budget': 0}), 200
+# Get single expense
+@app.route('/api/expenses/<id>', methods=['GET'])
+def get_expense(id):
+    expense = expenses_collection.find_one({'_id': ObjectId(id)})
+    if expense:
+        return jsonify(serialize_doc(expense)), 200
+    return jsonify({'error': 'Expense not found'}), 404
 
-# Set budget for current month/year (creates or updates)
-@app.route('/api/budget', methods=['POST'])
-def set_budget():
+# Create expense
+@app.route('/api/expenses', methods=['POST'])
+def create_expense():
     data = request.json
-    year = int(data.get('year', datetime.now().year))
-    month = int(data.get('month', datetime.now().month))
-    amount = float(data.get('budget'))
-    budgets_collection.update_one(
-        {'year': year, 'month': month},
-        {'$set': {'budget': amount, 'updatedAt': datetime.now().isoformat()}},
-        upsert=True
-    )
-    return jsonify({'year': year, 'month': month, 'budget': amount, 'message': 'Budget saved'}), 200
+    expense = {
+        'title': data.get('title'),
+        'amount': float(data.get('amount')),
+        'category': data.get('category'),
+        'date': data.get('date'),
+        'description': data.get('description', ''),
+        'createdAt': datetime.now().isoformat()
+    }
+    result = expenses_collection.insert_one(expense)
+    return jsonify({'_id': str(result.inserted_id), **expense}), 201
 
-# Health check
+# Update expense
+@app.route('/api/expenses/<id>', methods=['PUT'])
+def update_expense(id):
+    data = request.json
+    update_data = {
+        'title': data.get('title'),
+        'amount': float(data.get('amount')),
+        'category': data.get('category'),
+        'date': data.get('date'),
+        'description': data.get('description', ''),
+        'updatedAt': datetime.now().isoformat()
+    }
+    expenses_collection.update_one({'_id': ObjectId(id)}, {'$set': update_data})
+    return jsonify({'message': 'Expense updated'}), 200
+
+# Delete expense
+@app.route('/api/expenses/<id>', methods=['DELETE'])
+def delete_expense(id):
+    expenses_collection.delete_one({'_id': ObjectId(id)})
+    return jsonify({'message': 'Expense deleted'}), 200
+
+# ========== CATEGORY API ==========
+
+# Get all categories
+@app.route('/api/categories', methods=['GET'])
+def get_categories():
+    categories = list(categories_collection.find())
+    return jsonify([serialize_doc(cat) for cat in categories]), 200
+
+# Create category
+@app.route('/api/categories', methods=['POST'])
+def create_category():
+    data = request.json
+    category = {
+        'name': data.get('name'),
+        'icon': data.get('icon', ''),
+        'color': data.get('color', '#000000'),
+        'createdAt': datetime.now().isoformat()
+    }
+    result = categories_collection.insert_one(category)
+    return jsonify({'_id': str(result.inserted_id), **category}), 201
+
+# ========== ANALYTICS API ==========
+
+# Get summary statistics
+@app.route('/api/analytics/summary', methods=['GET'])
+def get_summary():
+    expenses = list(expenses_collection.find())
+    if not expenses:
+        return jsonify({
+            'totalExpenses': 0,
+            'categoryBreakdown': {},
+            'monthlyTrend': {}
+        }), 200
+    
+    total = sum(exp.get('amount', 0) for exp in expenses)
+    
+    # Category breakdown
+    category_breakdown = {}
+    for exp in expenses:
+        cat = exp.get('category', 'Other')
+        category_breakdown[cat] = category_breakdown.get(cat, 0) + exp.get('amount', 0)
+    
+    # Monthly trend
+    monthly_trend = {}
+    for exp in expenses:
+        date = exp.get('date', '')
+        if date:
+            month = date[:7]  # YYYY-MM
+            monthly_trend[month] = monthly_trend.get(month, 0) + exp.get('amount', 0)
+    
+    return jsonify({
+        'totalExpenses': total,
+        'categoryBreakdown': category_breakdown,
+        'monthlyTrend': monthly_trend,
+        'expenseCount': len(expenses)
+    }), 200
+
+# ========== HEALTH CHECK ==========
+
 @app.route('/api/health', methods=['GET'])
 def health():
     return jsonify({'status': 'ok', 'message': 'Backend is running'}), 200
-
-# ========== EXPENSE ROUTES ==========
-# ... REST OF FILE SAME ...
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
