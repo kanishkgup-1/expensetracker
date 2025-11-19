@@ -4,13 +4,15 @@ import Layout from "../components/Layout";
 import Header from "../components/Header";
 import StatsCard from "../components/StatsCard";
 import GraphCard from "../components/GraphCard";
+import { fetchExpenses, fetchSummary } from '@/lib/api';
 
 interface Expense {
-  id: number;
-  name: string;
+  _id?: string;
+  title: string;
   amount: number;
   category: string;
   date: string;
+  description?: string;
 }
 
 interface ChartDataItem {
@@ -22,32 +24,36 @@ const DashboardPage: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [monthlyBudget, setMonthlyBudget] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadData = () => {
-      try {
-        const savedExpenses = localStorage.getItem('expenses');
-        if (savedExpenses) {
-          const parsedExpenses = JSON.parse(savedExpenses);
-          setExpenses(Array.isArray(parsedExpenses) ? parsedExpenses : []);
-        }
-
-        const savedBudget = localStorage.getItem('monthlyBudget');
-        if (savedBudget) {
-          const parsedBudget = parseFloat(savedBudget);
-          setMonthlyBudget(isNaN(parsedBudget) ? 0 : parsedBudget);
-        }
-      } catch (error) {
-        console.error('Error loading data:', error);
-        setExpenses([]);
-        setMonthlyBudget(0);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     loadData();
   }, []);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Fetch expenses from backend
+      const fetchedExpenses = await fetchExpenses();
+      setExpenses(fetchedExpenses);
+
+      // Still get budget from localStorage (until you create a budget API endpoint)
+      const savedBudget = localStorage.getItem('monthlyBudget');
+      if (savedBudget) {
+        const parsedBudget = parseFloat(savedBudget);
+        setMonthlyBudget(isNaN(parsedBudget) ? 0 : parsedBudget);
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+      setError('Failed to load expenses. Please check your connection.');
+      setExpenses([]);
+      setMonthlyBudget(0);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Calculate stats
   const currentDate = new Date();
@@ -97,6 +103,26 @@ const DashboardPage: React.FC = () => {
     );
   }
 
+  if (error) {
+    return (
+      <Layout>
+        <Header title="Dashboard" />
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <div className="text-red-500 text-5xl mb-4">⚠️</div>
+            <p className="text-red-600 font-semibold">{error}</p>
+            <button 
+              onClick={loadData}
+              className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <Header title="Dashboard" />
@@ -126,7 +152,9 @@ const DashboardPage: React.FC = () => {
               </div>
               <div className="w-full bg-gray-200 rounded-full h-4">
                 <div
-                  className={`h-4 rounded-full ${monthlyTotal > monthlyBudget ? 'bg-red-500' : 'bg-green-500'}`}
+                  className={`h-4 rounded-full ${
+                    monthlyTotal > monthlyBudget ? 'bg-red-500' : 'bg-green-500'
+                  }`}
                   style={{ width: `${Math.min((monthlyTotal / monthlyBudget) * 100, 100)}%` }}
                 ></div>
               </div>
@@ -142,7 +170,7 @@ const DashboardPage: React.FC = () => {
             <div className="text-center py-8">
               <p className="text-gray-500 mb-4">Set a budget to track progress</p>
               <button 
-                onClick={() => window.location.href = '/expense'}
+                onClick={() => window.location.href = '/settings'}
                 className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
               >
                 Set Budget
