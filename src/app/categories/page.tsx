@@ -2,13 +2,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Layout from "../components/Layout";
 import Header from "../components/Header";
+import { fetchExpenses } from '@/lib/api';
 
 interface Expense {
-  id: number;
-  name: string;
+  _id?: string;
+  title: string;
   amount: number;
   category: string;
-  date: string; // ISO string YYYY-MM-DD
+  date: string;
+  description?: string;
 }
 
 interface CategoryRow {
@@ -22,22 +24,27 @@ const CategoriesPage: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [viewAllTime, setViewAllTime] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Load from localStorage
+  // Load from backend API
   useEffect(() => {
+    loadExpenses();
+  }, []);
+
+  const loadExpenses = async () => {
     try {
-      const saved = localStorage.getItem("expenses");
-      if (saved) {
-        const parsed = JSON.parse(saved) as Expense[];
-        setExpenses(Array.isArray(parsed) ? parsed : []);
-      }
+      setIsLoading(true);
+      setError(null);
+      const data = await fetchExpenses();
+      setExpenses(data);
     } catch (e) {
       console.error("Failed to load expenses:", e);
+      setError("Failed to load expenses. Please try again.");
       setExpenses([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  };
 
   const now = new Date();
   const currentMonth = now.getMonth();
@@ -75,7 +82,7 @@ const CategoriesPage: React.FC = () => {
 
   // CSV download
   const downloadCSV = () => {
-    const header = ["Category", "Total", "Count", "Average"];
+    const header = ["Category", "Total (₹)", "Count", "Average (₹)"];
     const data = rows.map((r) => [r.category, r.total, r.count, r.average]);
     const csv = [header, ...data]
       .map((line) => line.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
@@ -95,7 +102,30 @@ const CategoriesPage: React.FC = () => {
       <Layout>
         <Header title="Categories" />
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
+            <p className="mt-4 text-gray-600">Loading categories...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <Header title="Categories" />
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <div className="text-red-500 text-5xl mb-4">⚠️</div>
+            <p className="text-red-600 font-semibold">{error}</p>
+            <button 
+              onClick={loadExpenses}
+              className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       </Layout>
     );
@@ -137,7 +167,7 @@ const CategoriesPage: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div>
             <div className="text-2xl font-bold text-blue-600">
-              ${grandTotal.toFixed(2)}
+              ₹{grandTotal.toFixed(2)}
             </div>
             <div className="text-xs text-gray-500">Total</div>
           </div>
@@ -153,7 +183,7 @@ const CategoriesPage: React.FC = () => {
           </div>
           <div>
             <div className="text-2xl font-bold text-amber-600">
-              ${(filtered.length ? grandTotal / filtered.length : 0).toFixed(2)}
+              ₹{(filtered.length ? grandTotal / filtered.length : 0).toFixed(2)}
             </div>
             <div className="text-xs text-gray-500">Avg/Transaction</div>
           </div>
@@ -166,9 +196,9 @@ const CategoriesPage: React.FC = () => {
           <thead>
             <tr className="text-left text-sm text-gray-600">
               <th className="px-3 py-2">Category</th>
-              <th className="px-3 py-2">Total ($)</th>
+              <th className="px-3 py-2">Total (₹)</th>
               <th className="px-3 py-2">Count</th>
-              <th className="px-3 py-2">Average ($)</th>
+              <th className="px-3 py-2">Average (₹)</th>
               <th className="px-3 py-2 w-56">Share</th>
             </tr>
           </thead>
@@ -186,9 +216,9 @@ const CategoriesPage: React.FC = () => {
                 return (
                   <tr key={r.category} className="bg-gray-50">
                     <td className="px-3 py-3 font-medium">{r.category}</td>
-                    <td className="px-3 py-3 font-semibold">${r.total.toFixed(2)}</td>
+                    <td className="px-3 py-3 font-semibold">₹{r.total.toFixed(2)}</td>
                     <td className="px-3 py-3">{r.count}</td>
-                    <td className="px-3 py-3">${r.average.toFixed(2)}</td>
+                    <td className="px-3 py-3">₹{r.average.toFixed(2)}</td>
                     <td className="px-3 py-3">
                       <div className="w-full bg-gray-200 rounded-full h-3">
                         <div
