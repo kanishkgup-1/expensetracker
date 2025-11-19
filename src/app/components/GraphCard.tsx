@@ -76,7 +76,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ chartData = [] }) => {
     labels: labels,
     datasets: [
       {
-        label: 'Amount ($)',
+        label: 'Amount (₹)',
         data: values,
         backgroundColor: colors.slice(0, chartData.length).map(color => color + '80'),
         borderColor: colors.slice(0, chartData.length),
@@ -103,7 +103,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ chartData = [] }) => {
           label: function(context: TooltipItem<'pie'>) {
             const total = values.reduce((sum, val) => sum + val, 0);
             const percentage = ((context.raw as number / total) * 100).toFixed(1);
-            return `${context.label}: $${(context.raw as number).toFixed(2)} (${percentage}%)`;
+            return `${context.label}: ₹${(context.raw as number).toFixed(2)} (${percentage}%)`;
           },
         },
       },
@@ -120,7 +120,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ chartData = [] }) => {
       tooltip: {
         callbacks: {
           label: function(context: TooltipItem<'bar'>) {
-            return `Amount: $${(context.raw as number).toFixed(2)}`;
+            return `Amount: ₹${(context.raw as number).toFixed(2)}`;
           },
         },
       },
@@ -130,7 +130,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ chartData = [] }) => {
         beginAtZero: true,
         ticks: {
           callback: function(value: string | number) {
-            return '$' + value;
+            return '₹' + value;
           },
         },
       },
@@ -145,7 +145,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ chartData = [] }) => {
       
       {/* Total Amount Display */}
       <div className="text-center mb-8 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
-        <div className="text-3xl font-bold text-blue-600">${total.toFixed(2)}</div>
+        <div className="text-3xl font-bold text-blue-600">₹{total.toFixed(2)}</div>
         <div className="text-gray-600">Total Monthly Spending</div>
       </div>
 
@@ -174,13 +174,13 @@ const GraphCard: React.FC<GraphCardProps> = ({ chartData = [] }) => {
           </div>
           <div className="bg-gray-50 p-3 rounded-lg">
             <div className="text-xl font-bold text-gray-700">
-              ${Math.max(...values).toFixed(0)}
+              ₹{Math.max(...values).toFixed(0)}
             </div>
             <div className="text-xs text-gray-500">Highest</div>
           </div>
           <div className="bg-gray-50 p-3 rounded-lg">
             <div className="text-xl font-bold text-gray-700">
-              ${(total / chartData.length).toFixed(0)}
+              ₹{(total / chartData.length).toFixed(0)}
             </div>
             <div className="text-xs text-gray-500">Average</div>
           </div>
