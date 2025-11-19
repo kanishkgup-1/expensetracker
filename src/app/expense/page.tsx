@@ -2,24 +2,29 @@
 import React, { useState, useEffect } from "react";
 import Layout from "../components/Layout";
 import Header from "../components/Header";
+import { fetchExpenses, createExpense, deleteExpense as deleteExpenseAPI } from '@/lib/api';
 
 interface Expense {
-  id: number;
-  name: string;
+  _id?: string;
+  title: string;
   amount: number;
   category: string;
   date: string;
+  description?: string;
 }
 
 const ExpensePage: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [name, setName] = useState("");
+  const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("Food & Drinks");
   const [date, setDate] = useState("");
+  const [description, setDescription] = useState("");
   const [monthlyBudget, setMonthlyBudget] = useState(0);
   const [budgetInput, setBudgetInput] = useState("");
   const [showBudgetForm, setShowBudgetForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const categories = [
     "Food & Drinks",
@@ -32,61 +37,87 @@ const ExpensePage: React.FC = () => {
     "Others"
   ];
 
-  // Load data from localStorage on component mount
+  // Load data on component mount
   useEffect(() => {
-    const savedExpenses = localStorage.getItem('expenses');
-    const savedBudget = localStorage.getItem('monthlyBudget');
-    
-    if (savedExpenses) {
-      setExpenses(JSON.parse(savedExpenses));
+    loadExpenses();
+    loadBudget();
+  }, []);
+
+  const loadExpenses = async () => {
+    try {
+      setIsLoading(true);
+      const data = await fetchExpenses();
+      setExpenses(data);
+    } catch (error) {
+      console.error('Error loading expenses:', error);
+      alert('Failed to load expenses. Please check your connection.');
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const loadBudget = () => {
+    const savedBudget = localStorage.getItem('monthlyBudget');
     if (savedBudget) {
       setMonthlyBudget(parseFloat(savedBudget));
     }
-  }, []);
-
-  // Save to localStorage whenever data changes
-  useEffect(() => {
-    localStorage.setItem('expenses', JSON.stringify(expenses));
-  }, [expenses]);
-
-  useEffect(() => {
-    localStorage.setItem('monthlyBudget', monthlyBudget.toString());
-  }, [monthlyBudget]);
+  };
 
   // Add expense function
-  const addExpense = (e: React.FormEvent) => {
+  const addExpense = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !amount || !category || !date) {
-      alert("Please fill all fields!");
+    if (!title || !amount || !category || !date) {
+      alert("Please fill all required fields!");
       return;
     }
 
-    const newExpense: Expense = {
-      id: Date.now(),
-      name,
-      amount: parseFloat(amount),
-      category,
-      date
-    };
+    try {
+      setIsSaving(true);
+      const newExpense = {
+        title,
+        amount: parseFloat(amount),
+        category,
+        date,
+        description
+      };
 
-    const updatedExpenses = [...expenses, newExpense];
-    setExpenses(updatedExpenses);
-    
-    // Reset form
-    setName("");
-    setAmount("");
-    setDate("");
-    setCategory("Food & Drinks");
-    
-    // Check budget alert
-    checkBudgetAlert(updatedExpenses);
+      await createExpense(newExpense);
+      
+      // Reset form
+      setTitle("");
+      setAmount("");
+      setDate("");
+      setDescription("");
+      setCategory("Food & Drinks");
+      
+      // Reload expenses
+      await loadExpenses();
+      
+      // Check budget alert
+      checkBudgetAlert();
+      
+      alert('✅ Expense added successfully!');
+    } catch (error) {
+      console.error('Error adding expense:', error);
+      alert('Failed to add expense. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Delete expense function
-  const deleteExpense = (id: number) => {
-    if (confirm("Are you sure you want to delete this expense?")) {
-      setExpenses(expenses.filter(exp => exp.id !== id));
+  const handleDeleteExpense = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this expense?")) {
+      return;
+    }
+
+    try {
+      await deleteExpenseAPI(id);
+      await loadExpenses();
+      alert('✅ Expense deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      alert('Failed to delete expense. Please try again.');
     }
   };
 
@@ -96,6 +127,7 @@ const ExpensePage: React.FC = () => {
     const budget = parseFloat(budgetInput);
     if (!isNaN(budget) && budget > 0) {
       setMonthlyBudget(budget);
+      localStorage.setItem('monthlyBudget', budget.toString());
       setBudgetInput("");
       setShowBudgetForm(false);
       alert(`Monthly budget set to ₹${budget}`);
@@ -118,18 +150,10 @@ const ExpensePage: React.FC = () => {
   };
 
   // Budget alert system
-  const checkBudgetAlert = (expenseList: Expense[] = expenses) => {
+  const checkBudgetAlert = () => {
     if (monthlyBudget === 0) return;
     
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-    
-    const monthlyTotal = expenseList
-      .filter(exp => {
-        const expDate = new Date(exp.date);
-        return expDate.getMonth() === currentMonth && expDate.getFullYear() === currentYear;
-      })
-      .reduce((sum, exp) => sum + exp.amount, 0);
+    const monthlyTotal = getCurrentMonthTotal();
 
     if (monthlyTotal > monthlyBudget) {
       alert(`🚨 Budget Alert! You've exceeded your monthly budget of ₹${monthlyBudget}. Current spending: ₹${monthlyTotal.toFixed(2)}`);
@@ -140,6 +164,20 @@ const ExpensePage: React.FC = () => {
 
   const monthlyTotal = getCurrentMonthTotal();
   const budgetRemaining = monthlyBudget - monthlyTotal;
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <Header title="Manage Expenses" />
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading expenses...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -202,45 +240,55 @@ const ExpensePage: React.FC = () => {
       {/* Add Expense Form */}
       <div className="bg-white p-6 rounded-lg shadow-md mb-6">
         <h2 className="text-xl font-semibold mb-4">Add New Expense</h2>
-        <form onSubmit={addExpense} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <form onSubmit={addExpense} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input
+              type="text"
+              placeholder="Expense title *"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="border p-2 rounded-md"
+              required
+            />
+            <input
+              type="number"
+              placeholder="Amount *"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="border p-2 rounded-md"
+              step="0.01"
+              required
+            />
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="border p-2 rounded-md"
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="border p-2 rounded-md"
+              required
+            />
+          </div>
           <input
             type="text"
-            placeholder="Expense name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="border p-2 rounded-md"
-            required
-          />
-          <input
-            type="number"
-            placeholder="Amount"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="border p-2 rounded-md"
-            step="0.01"
-            required
-          />
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="border p-2 rounded-md"
-          >
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="border p-2 rounded-md"
-            required
+            placeholder="Description (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="border p-2 rounded-md w-full"
           />
           <button
             type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            disabled={isSaving}
+            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 w-full md:w-auto"
           >
-            Add Expense
+            {isSaving ? 'Adding...' : 'Add Expense'}
           </button>
         </form>
       </div>
@@ -256,22 +304,25 @@ const ExpensePage: React.FC = () => {
               .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
               .map((expense) => (
                 <div
-                  key={expense.id}
+                  key={expense._id}
                   className="flex justify-between items-center p-4 border rounded-lg hover:bg-gray-50"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
-                      <h3 className="font-semibold">{expense.name}</h3>
+                      <h3 className="font-semibold">{expense.title}</h3>
                       <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
                         {expense.category}
                       </span>
                     </div>
-                    <p className="text-gray-500 text-sm">{expense.date}</p>
+                    {expense.description && (
+                      <p className="text-gray-600 text-sm mt-1">{expense.description}</p>
+                    )}
+                    <p className="text-gray-500 text-sm">{new Date(expense.date).toLocaleDateString()}</p>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="font-bold text-lg">₹{expense.amount}</span>
+                    <span className="font-bold text-lg">₹{expense.amount.toFixed(2)}</span>
                     <button
-                      onClick={() => deleteExpense(expense.id)}
+                      onClick={() => expense._id && handleDeleteExpense(expense._id)}
                       className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 text-sm"
                     >
                       Delete
