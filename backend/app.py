@@ -5,6 +5,7 @@ from bson import ObjectId
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+from ml_model import predict_next_month_expense
 
 load_dotenv()
 
@@ -132,6 +133,24 @@ def get_summary():
         'monthlyTrend': monthly_trend,
         'expenseCount': len(expenses)
     }), 200
+
+# Predict next month expenses
+@app.route('/api/predict/next-month', methods=['GET'])
+def predict_next_month():
+    try:
+        # Fetch all expenses from database
+        expenses = list(expenses_collection.find())
+        
+        # Get prediction from ML model
+        result = predict_next_month_expense(expenses)
+        
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Prediction error: {str(e)}',
+            'prediction': 0
+        }), 500
 
 # ========== HEALTH CHECK ==========
 
