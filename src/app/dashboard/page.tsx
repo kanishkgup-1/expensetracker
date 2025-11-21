@@ -4,6 +4,7 @@ import Layout from "../components/Layout";
 import Header from "../components/Header";
 import StatsCard from "../components/StatsCard";
 import GraphCard from "../components/GraphCard";
+import PredictionCard from "../components/PredictionCard";
 import { fetchExpenses, fetchSummary } from '@/lib/api';
 
 interface Expense {
@@ -133,6 +134,11 @@ const DashboardPage: React.FC = () => {
         <StatsCard title="Categories" value={categoriesCount} />
         <StatsCard title="Monthly Budget" value={monthlyBudget > 0 ? `₹${monthlyBudget.toFixed(2)}` : "Not Set"} />
         <StatsCard title="Remaining" value={monthlyBudget > 0 ? `₹${remaining.toFixed(2)}` : "N/A"} />
+      </div>
+
+      {/* AI Prediction Card */}
+      <div className="mb-8">
+        <PredictionCard />
       </div>
 
       {/* Charts */}
