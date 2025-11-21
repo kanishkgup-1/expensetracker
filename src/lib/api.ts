@@ -81,3 +81,21 @@ export const fetchSummary = async () => {
   if (!response.ok) throw new Error('Failed to fetch summary');
   return response.json();
 };
+
+// ========== PREDICTION API ==========
+export interface PredictionResult {
+  success: boolean;
+  prediction: number;
+  confidence: string;
+  trend: string;
+  average_monthly?: number;
+  last_month?: number;
+  data_points?: number;
+  message?: string;
+}
+
+export const fetchPrediction = async (): Promise<PredictionResult> => {
+  const response = await fetch(`${API_BASE_URL}/api/predict/next-month`);
+  if (!response.ok) throw new Error('Failed to fetch prediction');
+  return response.json();
+};
