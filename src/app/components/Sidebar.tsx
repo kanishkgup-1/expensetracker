@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { FiMenu, FiHome, FiDollarSign, FiList, FiSettings } from "react-icons/fi";
+import { FiMenu, FiHome, FiDollarSign, FiList, FiSFiHome, FiDollarSign, FiList, FiSettings, FiLightbulb } from "react-icons/fi";
 
 const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false); // collapsed by default
@@ -53,6 +53,14 @@ const Sidebar: React.FC = () => {
         >
           <FiList size={24} className="mx-auto md:mx-0" />
           {isOpen && <span className="ml-2">Categories</span>}
+        </Link>
+
+                <Link
+          href="/recommendations"
+          className="flex items-center hover:bg-gray-700 px-3 py-2 rounded"
+        >
+          <FiLightbulb size={24} className="mx-auto md:mx-0" />
+          {isOpen && <span className="ml-2">Recommendations</span>}
         </Link>
 
         <Link
