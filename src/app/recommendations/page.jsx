@@ -7,6 +7,7 @@ export default function RecommendationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [hasExpenses, setHasExpenses] = useState(false);
 
   const categories = ['All', 'Electronics', 'Fashion', 'Food', 'Entertainment'];
 
@@ -18,9 +19,18 @@ export default function RecommendationsPage() {
     try {
       setLoading(true);
       
-      const expensesResponse = await fetch('/api/expenses');
-      const expensesData = await expensesResponse.json();
-      
+      // Try to fetch expenses, but don't fail if endpoint doesn't exist
+      let expensesData = { expenses: [] };
+      try {
+        const expensesResponse = await fetch('/api/expenses');
+        if (expensesResponse.ok) {
+          expensesData = await expensesResponse.json();
+          setHasExpenses(expensesData.expenses && expensesData.expenses.length > 0);
+        }
+      } catch (expensesError) {
+        console.log('No expenses API available, showing product catalog');
+      }
+
       const response = await fetch('/api/recommendations', {
         method: 'POST',
         headers: {
@@ -32,7 +42,7 @@ export default function RecommendationsPage() {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         setRecommendations(data.recommendations);
       } else {
@@ -86,29 +96,16 @@ export default function RecommendationsPage() {
             💡 Smart Recommendations
           </h1>
           <p className="text-gray-600 text-lg">
-            Discover better alternatives based on your spending patterns
+            {hasExpenses 
+              ? 'Discover better alternatives based on your spending patterns'
+              : 'Browse our product catalog - Add expenses to get personalized recommendations!'}
           </p>
-          <div className="mt-4 inline-block bg-white rounded-full px-6 py-2 shadow-md">
-            <p className="text-indigo-600 font-semibold">
-              {filteredRecommendations.length} Products Found
-            </p>
-          </div>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-3 mb-10">
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`px-6 py-2 rounded-full font-medium transition-all duration-200 ${
-                selectedCategory === category
-                  ? 'bg-indigo-600 text-white shadow-lg scale-105'
-                  : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md'
-              }`}
-            >
-              {category}
-            </button>
-          ))}
+        <div className="mt-4 inline-block bg-white rounded-full px-6 py-2 shadow-md">
+          <p className="text-indigo-600 font-semibold">
+            {filteredRecommendations.length} Products Found
+          </p>
         </div>
 
         {filteredRecommendations.length === 0 ? (
@@ -141,7 +138,7 @@ export default function RecommendationsPage() {
 
                   <div className="flex items-center justify-between mb-4">
                     <div className="text-3xl font-bold text-indigo-600">
-                      ₹{product.price}
+                      ${product.price}
                     </div>
                   </div>
 
@@ -153,16 +150,15 @@ export default function RecommendationsPage() {
                       </p>
                     </div>
                   )}
-
-                  <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition-colors duration-200 transform hover:scale-105">
-                    View Details
-                  </button>
                 </div>
+
+                <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition-colors">
+                  View Details
+                </button>
               </div>
             ))}
           </div>
         )}
-
       </div>
     </div>
   );
