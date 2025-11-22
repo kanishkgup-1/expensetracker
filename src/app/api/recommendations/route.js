@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import productsData from '@/data/products.json';
-
+import productsData from '../../../../data/products.json';
 function calculateSimilarity(str1, str2) {
   const s1 = str1.toLowerCase();
   const s2 = str2.toLowerCase();
